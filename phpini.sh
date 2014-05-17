@@ -6,7 +6,7 @@
 #This script takes no command-line arguments, and prompts for all necessary information.
 #Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
 #This script only works on cPanel enabled servers, however the paths can be updated to work on any servertype
-#The following PHP changes are supported: Magic Quotes, fopen, upload size
+#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
 
 function main() {
     echo -n "Enter username: "
@@ -23,11 +23,23 @@ function main() {
         echo "1. Set allow_url_fopen to On"
         echo "2. Set magic_quotes_gpc to Off"
         echo "3. Change File Upload Size"
+        echo "4. Set max_input_vars to a custom value"
+        echo "5. Change Default Timezone"
         read -p "Selection: " flag
 
-        if [ "$flag" = 3 ]; then
+        if [ "$flag" = "3" ]; then
             echo -n "Please provide an updated Upload Size, including MB/GB suffix: "
-            read php_size
+            read value
+        elif [ "$flag" = "4" ]; then
+            echo -n "Please provide a new max_input_vars value: "
+            read value
+        elif [ "$flag" = "5" ]; then
+            echo "Legal timezones can be found at this address: http://www.php.net/manual/en/timezones.php"
+            echo "Common timezones include: UTC, Europe/London (GMT) Europe/Berlin (GMT+1), Europe/Athens (GMT+2), Europe/Moscow (GMT+3), Asia/Damascus (GMT+4)"
+            echo "Asia/Yekaterinburg (GMT+5), Asia/Ho_Chi_Minh (GMT+6), Asia/Beijing (GMT+7), Asia/Tokyo (GMT+8), Australia/Sydney (GMT+8)"
+            echo "US/Central, US/Eastern, US/Mountain, US/Pacific"
+            echo -n "Please specify a legal PHP timezone: "
+            read value
         fi
     fi
 }
@@ -107,16 +119,40 @@ function work() {
             echo "Magic Quotes is already disabled for this account."
             echo "Please note: Magic Quotes is removed from PHP 5.4+"
         fi
-    elif [ "$flag" = 3 ]; then
-        echo "Setting post_max_size and upload_max_filesize to $php_size."
+    elif [ "$flag" = "3" ]; then
+        echo "Setting post_max_size and upload_max_filesize to $value."
         #Deleting the current upload lines
         sed -i '/upload_max_filesize/d' "$ini"
         sed -i '/post_max_size/d' "$ini"
         #Adding our new upload lines
         echo "" >> "$ini"
         echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo upload_max_filesize = "$php_size" >> "$ini"
-        echo post_max_size = "$php_size" >> "$ini"
+        echo upload_max_filesize = "$value" >> "$ini"
+        echo post_max_size = "$value" >> "$ini"
+    elif [ "$flag" = "4" ]; then
+        echo "Setting max_input_vars to $value."
+        #Deleting the max_input_vars line
+        sed -i '/max_input_vars/d' "$ini"
+        #Adding our new max_input_vars line
+        echo "" >> "$ini"
+        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+        echo max_input_vars = "$value" >> "$ini"
+    elif [ "$flag" = "5" ]; then
+        echo "Setting max_input_vars to $value."
+        #Deleting the max_input_vars line
+        sed -i '/max_input_vars/d' "$ini"
+        #Adding our new max_input_vars line
+        echo "" >> "$ini"
+        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+        echo max_input_vars = "$value" >> "$ini"
+    elif [ "$flag" = "6" ]; then
+        echo "Setting date.timezone to $value."
+        #Deleting date.timezone line
+        sed -i '/date.timezone/d' "$ini"
+        #Adding our date.timezone line
+        echo "" >> "$ini"
+        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+        echo date.timezone = "$value" >> "$ini"
     else
         echo "A correct flag was not specified. Re-run the script, and use the number for the flag you would like to specify"
         exit 1
