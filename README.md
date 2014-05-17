@@ -1,4 +1,4 @@
 cpanel-scripts
 ==============
 
-Custom Scripts for cPanel web hosting servers
+This repository is exclusively for custom php.ini scripts that have been created by myself while testing cPanel functionality
