@@ -6,7 +6,7 @@
 #This script takes no command-line arguments, and prompts for all necessary information.
 #Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
 #This script only works on cPanel enabled servers, however the paths can be updated to work on any servertype
-#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
+#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, date.timezone, and memory_limit
 
 function prompts() {
     echo -n "Enter username: "
