@@ -1,14 +1,14 @@
 #!/bin/bash
 #Custom PHP.ini Creator and Updater
 #Author: Josh Grancell
-#Updated: 5-17-2014
+#Updated: 5-18-2014
 #
 #This script takes no command-line arguments, and prompts for all necessary information.
 #Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
 #This script only works on cPanel enabled servers, however the paths can be updated to work on any servertype
 #The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
 
-function main() {
+function prompts() {
     echo -n "Enter username: "
     read user
     echo "You have selected cPanel user: $user"
@@ -22,13 +22,15 @@ function main() {
         echo "Select php.ini flag: "
         echo "1. Set allow_url_fopen to On"
         echo "2. Set magic_quotes_gpc to Off"
-        echo "3. Change File Upload Size"
+        echo "3. Change File Upload Size (post and upload values)"
         echo "4. Set max_input_vars to a custom value"
-        echo "5. Change Default Timezone"
+        echo "5. Change default timezone (date.timezone)"
+        echo "6. Change the PHP memory_limit"
         read -p "Selection: " flag
 
+        #Getting more information for certain flags
         if [ "$flag" = "3" ]; then
-            echo -n "Please provide an updated Upload Size, including MB/GB suffix: "
+            echo -n "Please provide an updated Upload Size, including M/G suffix: "
             read value
         elif [ "$flag" = "4" ]; then
             echo -n "Please provide a new max_input_vars value: "
@@ -40,50 +42,58 @@ function main() {
             echo "US/Central, US/Eastern, US/Mountain, US/Pacific"
             echo -n "Please specify a legal PHP timezone: "
             read value
+        elif [ "$flag" = "6" ]; then
+            echo -n "Please provide an updated memory_limit, including M/G suffix: "
+            read value
+        fi
+
+        #Defining the INI file location
+        ini=/home/$user/public_html/php.ini
+
+        if [ ! -e "$ini" ]; then
+            #No php.ini file currently, asking for what version to create (using global versions)
+            echo  "A current php.ini file does not exist. Please select the PHP version to copy:"
+            echo "1. Server Default (Usually PHP 5.3.2x)"
+            echo "2. PHP 5.4.8"
+            echo "3. PHP 5.5.0"
+            read -p "Selection: " php
         fi
     fi
 }
 
-function work() {
-    ini=/home/$user/public_html/php.ini
-    #Checking to see if the php.ini file exists
-    if [ ! -e "$ini" ]; then
-        #A custom php.ini file does not already exist. Let's go head and create one
-        echo  "A current php.ini file does not exist. Please select the PHP version to copy:"
-        echo "1. Server Default (Usually PHP 5.3.2x)"
-        echo "2. PHP 5.4.8"
-        echo "3. PHP 5.5.0"
-        read -p "Selection: " php
-
-        if [ "$php" = "2" ]; then
-            #We're using PHP version 5.4.8
-            if [ -e /opt/php/php-5.4.8/lib/php.ini ]; then
-                #This version of PHP exists on the server, so now we will copy it to the cPanel user directory
-                echo "Creating the custom PHP 5.4.8 php.ini file."
-                cp /opt/php/php-5.4.8/lib/php.ini "$ini"
-            else
-                #This version of PHP does not exist on the server
-                echo "PHP 5.4.8 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
-                cp /usr/loca/lib/php.ini "$ini"
-            fi
-        elif [ "$php" = "3" ]; then
-            #We're using PHP version 5.5.0
-            if [ -e /opt/php/php-5.5.0/lib/php.ini ]; then
-                #This version of PHP exists on the server, so now we will copy it to the cPanel user directory
-                echo "Creating the custom PHP 5.5.0 php.ini file."
-                cp /opt/php/php-5.5.0/lib/php.ini "$ini"
-            else
-                #This version of PHP does not exist on the server
-                echo "PHP 5.5.0 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
-                cp /usr/loca/lib/php.ini "$ini"
-            fi
+function inimanip() {
+    #All code that creates the new php.ini is found in this function
+    if [ "$php" = "2" ]; then
+        #We're using PHP version 5.4.8
+        if [ -e /opt/php/php-5.4.8/lib/php.ini ]; then
+            #This version of PHP exists on the server, so now we will copy it to the cPanel user directory
+            echo "Creating the custom PHP 5.4.8 php.ini file."
+            cp /opt/php/php-5.4.8/lib/php.ini "$ini"
         else
-            #We're using the server default php.ini
-            echo "Creating the custom PHP php.ini file using the server default."
-            cp /usr/local/lib/php.ini "$ini"
+            #This version of PHP does not exist on the server
+            echo "PHP 5.4.8 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
+            cp /usr/loca/lib/php.ini "$ini"
         fi
+    elif [ "$php" = "3" ]; then
+        #We're using PHP version 5.5.0
+        if [ -e /opt/php/php-5.5.0/lib/php.ini ]; then
+            #This version of PHP exists on the server, so now we will copy it to the cPanel user directory
+            echo "Creating the custom PHP 5.5.0 php.ini file."
+            cp /opt/php/php-5.5.0/lib/php.ini "$ini"
+        else
+            #This version of PHP does not exist on the server
+            echo "PHP 5.5.0 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
+            cp /usr/loca/lib/php.ini "$ini"
+        fi
+    else
+        #We're using the server default php.ini
+        echo "Creating the custom PHP php.ini file using the server default."
+        cp /usr/local/lib/php.ini "$ini"
     fi
+}
 
+
+function work() {
 
     #The php.ini file exists, either because we created it or because it already existed.
     chown $user:$user "$ini"
@@ -138,14 +148,6 @@ function work() {
         echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
         echo max_input_vars = "$value" >> "$ini"
     elif [ "$flag" = "5" ]; then
-        echo "Setting max_input_vars to $value."
-        #Deleting the max_input_vars line
-        sed -i '/max_input_vars/d' "$ini"
-        #Adding our new max_input_vars line
-        echo "" >> "$ini"
-        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo max_input_vars = "$value" >> "$ini"
-    elif [ "$flag" = "6" ]; then
         echo "Setting date.timezone to $value."
         #Deleting date.timezone line
         sed -i '/date.timezone/d' "$ini"
@@ -153,13 +155,22 @@ function work() {
         echo "" >> "$ini"
         echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
         echo date.timezone = "$value" >> "$ini"
+    elif [ "$flag" = "6" ]; then
+        echo "Setting memory_limit to $value."
+        #Deleting the max_input_vars line
+        sed -i '/memory_limit/d' "$ini"
+        #Adding our new max_input_vars line
+        echo "" >> "$ini"
+        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+        echo memory_limit = "$value" >> "$ini"
     else
         echo "A correct flag was not specified. Re-run the script, and use the number for the flag you would like to specify"
         exit 1
     fi
 }
 
-main
+prompts
+inimanip
 work
 
 echo "Process complete. Please verify in the .htaccess file for $user that no PHP Version changer code exists that may cause this to not function properly"
