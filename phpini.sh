@@ -1,12 +1,12 @@
 #!/bin/bash
-#Custom PHP.ini Creator and Updater
+#Custom PHP.ini Creator and Updater v1.0
 #Author: Josh Grancell
 #Updated: 5-21-2014
 #
 #This script takes no command-line arguments, and prompts for all necessary information.
 #Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
 #This script only works on cPanel enabled servers, however the paths can be updated to work on any servertype
-#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
+#The following PHP changes are supported: Magic Quotes, fopen, upload size, memory_limit, max_input_vars, and date.timezone
 
 function prompts() {
     echo -ne "\033[32m" #Green text color
