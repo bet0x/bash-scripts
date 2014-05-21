@@ -1,14 +1,15 @@
 #!/bin/bash
 #Custom PHP.ini Creator and Updater
 #Author: Josh Grancell
-#Updated: 5-18-2014
+#Updated: 5-19-2014
 #
 #This script takes no command-line arguments, and prompts for all necessary information.
 #Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
 #This script only works on cPanel enabled servers, however the paths can be updated to work on any servertype
-#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, date.timezone, and memory_limit
+#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
 
 function prompts() {
+    echo -ne "\033[32m"
     echo -n "Enter username: "
     read user
     echo "You have selected cPanel user: $user"
@@ -61,7 +62,8 @@ function prompts() {
     fi
 }
 
-function inimanip() {
+#All intial .ini manipulation, including creation and setting ownership, are in this function
+function inimanip() {  
     #All code that creates the new php.ini is found in this function
     if [ "$php" = "2" ]; then
         #We're using PHP version 5.4.8
@@ -85,20 +87,24 @@ function inimanip() {
             echo "PHP 5.5.0 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
             cp /usr/loca/lib/php.ini "$ini"
         fi
-    else
+    elif [ "$php" = "1" ]; then
         #We're using the server default php.ini
         echo "Creating the custom PHP php.ini file using the server default."
         cp /usr/local/lib/php.ini "$ini"
+    else
+        #The custom php.ini already exists, and I haven't figured out how to find version of a specific php.ini yet.
+        #Purposefully em
     fi
+
+    #chmod/chowning the file for safety.
+    chown $user:$user "$ini"
+    chmod 600 "$ini"
 }
 
 
 function work() {
 
-    #The php.ini file exists, either because we created it or because it already existed.
-    chown $user:$user "$ini"
-    chmod 600 "$ini"
-
+    #Fopen
     if [ "$flag" = "1" ]; then
         if grep -xq "allow_url_fopen = Off" "$ini"; then
             #Fopen is disabled, so let's enable it
@@ -107,14 +113,17 @@ function work() {
             sed -i '/allow_url_fopen/d' "$ini"
             sed -i '/allow_url_include/d' "$ini"
             #Adding our new settings at the end
-            echo "" >> "$ini"
-            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`" >> "$ini"
-            echo allow_url_fopen = On >> "$ini"
-            echo allow_url_include = On >> "$ini"
+            {
+                echo ""
+                echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+                echo allow_url_fopen = On
+                echo allow_url_include = On
+            } >> $ini
         else
             echo "allow_url_fopen is already enabled for this account."
         fi
 
+    #Magic Quotes [ Removed PHP 5.4+ ]
     elif [ "$flag" = "2" ]; then
         if grep -xq "magic_quotes_gpc = On" "$ini"; then
             #This is v5.3 or earlier, so let's disablee MQGPC
@@ -122,50 +131,80 @@ function work() {
             #Deleting the current magic quotes line
             sed -i '/allow_url_fopen/d' "$ini"
             #Adding our new magic quotes line
-            echo "" >> "$ini"
-            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`" >> "$ini"
-            echo magic_quotes_gpc = Off >> "$ini"
+            {
+                echo ""
+                echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+                echo magic_quotes_gpc = Of
+            } >> $ini
         else
             echo "Magic Quotes is already disabled for this account."
             echo "Please note: Magic Quotes is removed from PHP 5.4+"
         fi
+
+    #Upload/Post Size
     elif [ "$flag" = "3" ]; then
         echo "Setting post_max_size and upload_max_filesize to $value."
         #Deleting the current upload lines
         sed -i '/upload_max_filesize/d' "$ini"
         sed -i '/post_max_size/d' "$ini"
         #Adding our new upload lines
-        echo "" >> "$ini"
-        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo upload_max_filesize = "$value" >> "$ini"
-        echo post_max_size = "$value" >> "$ini"
+        {
+            echo ""
+            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+            echo upload_max_filesize = "$value"
+            echo post_max_size = "$value"
+        } >> $ini
+
+    #Max Input Vars Flag
     elif [ "$flag" = "4" ]; then
         echo "Setting max_input_vars to $value."
         #Deleting the max_input_vars line
         sed -i '/max_input_vars/d' "$ini"
         #Adding our new max_input_vars line
-        echo "" >> "$ini"
-        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo max_input_vars = "$value" >> "$ini"
+        {
+            echo ""
+            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+            echo max_input_vars = "$value"
+        } >> $ini
+
+    #Timezone Flag
     elif [ "$flag" = "5" ]; then
         echo "Setting date.timezone to $value."
         #Deleting date.timezone line
         sed -i '/date.timezone/d' "$ini"
         #Adding our date.timezone line
-        echo "" >> "$ini"
-        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo date.timezone = "$value" >> "$ini"
+        {
+            echo ""
+            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+            echo date.timezone = "$value"
+        } >> $ini
+
+    #Memory Limit Flag
     elif [ "$flag" = "6" ]; then
         echo "Setting memory_limit to $value."
         #Deleting the max_input_vars line
         sed -i '/memory_limit/d' "$ini"
         #Adding our new max_input_vars line
-        echo "" >> "$ini"
-        echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
-        echo memory_limit = "$value" >> "$ini"
+        {
+            echo ""
+            echo ";Lines below this automatically added by A2 Hosting per support request on `date +%F`"
+            echo memory_limit = "$value"
+        } >> $ini
     else
-        echo "A correct flag was not specified. Re-run the script, and use the number for the flag you would like to specify"
+        echo "A correct flag was not specified. Re-run the script, and use the number for the flag you would like to specify."
         exit 1
+    fi
+
+    #Final check to see if there is an .htaccess that would affect PHP
+    if [ -e /home/$user/.htaccess ]; then
+        if grep "x-httpd-php" /home/$user/.htaccess; then
+            echo "There is an .htaccess in the /home/$user with PHP version directives."
+        fi
+    fi
+    if [ -e /home$user/public_html/.htaccess ]; then
+        if grep "x-httpd-php" /home/$user/public_html/.htaccess; then
+            echo "There is an .htaccess in /home/$user/public_html with PHP version directives."
+        fi
     fi
 }
 
@@ -173,6 +212,6 @@ prompts
 inimanip
 work
 
-echo "Process complete. Please verify in the .htaccess file for $user that no PHP Version changer code exists that may cause this to not function properly"
+echo "Script complete. Please verify the new php.ini, or run the script again if you need another flag updated."
 
 exit 0
