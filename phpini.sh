@@ -1,32 +1,33 @@
 #!/bin/bash
-#Custom PHP.ini Creator and Updater
-#Author: Josh Grancell
-#Updated: 5-21-2014
-#This script takes no command-line arguments, and prompts for all necessary information.
-#Currently available PHP versions: 5.5.0, 5.4.8, 5.3.2x (Server Default)
-#The following PHP changes are supported: Magic Quotes, fopen, upload size, max_input_vars, and date.timezone
+# PHP Swiss Army Knife
+# Version 1.1
+# Author: Josh Grancell
+#
+# Requirements: Server is an A2 Hosting Managed Shared or Dedicated Server
+# PHP Versions: 5.3, 5.4, 5.5. Untested, but most likely workable, with 5.2 and 5.1
+# Supported PHP Flags: magic quotes, fopen, upload size, input vars, date.timezone
+# The tabbed comments will be removed once the script is finalized
+#  ------------------------------------------------------------------------------  #
 
 function prompts() {
-    echo -ne "\033[32m" #Green text color
+    echo -ne "\033[32m"     #Green text color
     echo -n "Enter username: "
     read user
     echo "You have selected cPanel user: $user"
 
-    if [ ! -f /var/cpanel/users/"$user" ]; then
-        #Username given is invalid
-        echo -ne "\033[31m" #Red text color
+    if [ ! -f /var/cpanel/users/"$user" ]; then                 #Given username is invalid
+        echo -ne "\033[31m"                                     #Red color
         echo "\033[31m Invalid User. Exiting"
-        echo -ne "\033[0;39m" #Reset shell color
+        echo -ne "\033[0;39m"                                   #Reset color
         exit 1
-    else
-        #Username is valid, now requesting the php flag that needs to be customized and setting that to $flag
+    else                                                        #Username is valid
         echo "Select php.ini flag: "
         echo "1. Set allow_url_fopen to On          4. Set max_input_vars to a custom value"
         echo "2. Set magic_quotes_gpc to Off        5. Change the default timezone"
         echo "3. Change file upload size            6. Change the PHP memory limit"
         read -p "Selection: " flag
 
-        #Getting more information for certain flags and saving into variable $value
+        #Getting and saving more information to $value
         if [ "$flag" = "3" ]; then
             echo -n "Please provide an updated upload size, including suffix (example: 512M): "
             read value
@@ -42,53 +43,45 @@ function prompts() {
             read value
         fi
 
-        #Determining whether this is a Shared server running CloudLinux or a ManVPS with CentOS
-        if grep -s "CloudLinux" /etc/redhat-release; then
-            #Server is running CL, probably a shared server
+        #Determining server type
+        if grep -s "CloudLinux" /etc/redhat-release; then       #Server is Reseller/Shared
             server="shared"
-            #Defining the INI file location
             ini=/home/$user/public_html/php.ini
-            if [ ! -e "$ini" ]; then
-                #No php.ini file currently, asking for what version to create (using global versions)
-                echo  "A current php.ini file does not exist. Please select the PHP version to copy:"
+            if [ ! -e "$ini" ]; then                            #No php.ini, we'll create
+                echo "A current php.ini file does not exist. Please select the PHP version to copy:"
                 echo "1. Server Default (Usually PHP 5.3.2x)"
                 echo "2. PHP 5.4.8"
                 echo "3. PHP 5.5.0"
                 read -p "Selection: " php
             fi
-        elif grep -s "CentOS" /etc/redhat-release; then
-            #Server is running CentOS, probably a VPS/Dedi
+        elif grep -s "CentOS" /etc/redhat-release; then         #Server is ManVPS/Dedi
             server="dedicated"
+            htaccess=/home/"$user"/public_html/.htaccess
         fi
-
-
     fi
 }
 
-#All intial .ini manipulation, including creation and setting ownership, are in this function
-function sharedini() {  
-    if [ "$php" = "2" ]; then
-        #WPHP version 5.4.8
-        if [ -e /opt/php/php-5.4.8/lib/php.ini ]; then #PHP version exists on server
+#All Shared .ini manupulation is in this fuction
+function sharedini() {                                          
+    if [ "$php" = "2" ]; then                                   #PHP version 5.4.8
+        if [ -e /opt/php/php-5.4.8/lib/php.ini ]; then          #PHP version exists on server
             echo "Creating the custom PHP 5.4.8 php.ini file."
             cp /opt/php/php-5.4.8/lib/php.ini "$ini"
         else
-            echo -ne "\033[31m" #Red
+            echo -ne "\033[31m"                                 #Red color
             echo "PHP 5.4.8 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
             cp /usr/local/lib/php.ini "$ini"
-            echo -ne "\033[32m" # Green
+            echo -ne "\033[32m"                                 #Green color
         fi
-    elif [ "$php" = "3" ]; then
-        #PHP version 5.5.0
-        if [ -e /opt/php/php-5.5.0/lib/php.ini ]; then #PHP version exists on server
-
+    elif [ "$php" = "3" ]; then                                 #PHP version 5.5.0
+        if [ -e /opt/php/php-5.5.0/lib/php.ini ]; then          #PHP version exists on server
             echo "Creating the custom PHP 5.5.0 php.ini file."
             cp /opt/php/php-5.5.0/lib/php.ini "$ini"
         else
-            echo -ne "\033[31m" #Red
+            echo -ne "\033[31m"                                 #Red color
             echo "PHP 5.5.0 does not currently exist on the server. Creating the custom PHP php.ini file using the server default instead."
             cp /usr/loca/lib/php.ini "$ini"
-            echo -ne "\033[32m" #Green
+            echo -ne "\033[32m"                                 #Green color
         fi
     elif [ "$php" = "1" ]; then
         #Default server php.ini
@@ -98,7 +91,7 @@ function sharedini() {
 
     #chmod/chowning the file for safety.
     chown $user:$user "$ini"
-    chmod 600 "$ini"
+    chmod 640 "$ini"
 }
 
 
@@ -178,16 +171,16 @@ function sharedwork() {
             echo memory_limit = "$value"
         } >> "$ini"
     else
-        echo -ne "\033[31m" #Red
+        echo -ne "\033[31m"                                     #Red color
         echo "A correct flag was not specified. Re-run the script, and use the number for the flag you would like to specify."
-        echo -ne "\033[0;39m" #Reset
+        echo -ne "\033[0;39m"                                   #Reset color
         exit 1
     fi
 
     #Final check to see if there is an .htaccess that would affect PHP
     if [ -e /home/"$user"/.htaccess ]; then
         if grep -q "x-httpd-php" /home/"$user"/.htaccess; then
-            echo -ne "\033[31m" #Red
+            echo -ne "\033[31m"                                 #Red color
             echo -n "There is an .htaccess in /home/$user with PHP version directives, would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
@@ -197,7 +190,7 @@ function sharedwork() {
     fi
     if [ -e /home/"$user"/public_html/.htaccess ]; then
         if grep -q "x-httpd-php" /home/"$user"/public_html/.htaccess; then
-            echo -ne "\033[31m" #Red
+            echo -ne "\033[31m"                                 #Red color
             echo -n "There is an .htaccess in /home/$user/public_html with PHP version directives, would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
@@ -206,10 +199,32 @@ function sharedwork() {
         fi
     fi
 
-    echo -ne "\033[32m" #Green
+    echo -ne "\033[32m"                                         #Green color
     echo "Script complete. Please verify the new php.ini, or run the script again if you need another flag updated."
-    echo -ne "\033[0;39m" #Reset
+    echo -ne "\033[0;39m"                                       #Reset color
+}
 
+function dediaccess() {
+
+    if [ ! -e "$htaccess" ]; then
+        echo "Creating the .htaccess file."
+        touch "$htaccess"
+    fi
+
+    chmod 644 "$htaccess"
+    chown $user:$user "$htaccess"
+
+    #Adding security lines to the new htaccess line
+    {
+        echo "# Added by A2 Hosting Support per support request on $(date +%F)"
+        echo "# Prevent Apache from serving .ht* files:"
+        echo "<FilesMatch \"^\\.ht\">"
+        echo "   Order allow,deny"
+        echo "   Deny from all"
+        echo "</FilesMatch>"
+    } >> "$htaccess"
+
+    #WORK IN PROGRESS HERE - TODO: ADD ALL FLAGS
 }
 
 prompts
@@ -218,7 +233,7 @@ if [ $server = "shared" ]; then
     sharedini
     sharedwork
 elif [ $server = "dedicated" ]; then
-    #dediini
+    #dediaccess
     #dediwork
 fi
 
