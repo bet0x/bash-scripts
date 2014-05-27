@@ -1,16 +1,16 @@
 #!/bin/bash
 # PHP Swiss Army Knife
-# Version 1.1
+# Version 1.1.01
 # Author: Josh Grancell
 #
-# Requirements: Server is an A2 Hosting Managed Shared or Dedicated Server
+# Requirements: Server is an A2 Hosting Managed Shared Server
 # PHP Versions: 5.3, 5.4, 5.5. Untested, but most likely workable, with 5.2 and 5.1
 # Supported PHP Flags: magic quotes, fopen, upload size, input vars, date.timezone
 # The tabbed comments will be removed once the script is finalized
 #  ------------------------------------------------------------------------------  #
 
 function prompts() {
-    echo -ne "\033[32m"     #Green text color
+    echo -ne "\033[32m"                                         #Green text color
     echo -n "Enter username: "
     read user
     echo "You have selected cPanel user: $user"
@@ -56,7 +56,6 @@ function prompts() {
             fi
         elif grep -s "CentOS" /etc/redhat-release; then         #Server is ManVPS/Dedi
             server="dedicated"
-            htaccess=/home/"$user"/public_html/.htaccess
         fi
     fi
 }
@@ -83,8 +82,7 @@ function sharedini() {
             cp /usr/loca/lib/php.ini "$ini"
             echo -ne "\033[32m"                                 #Green color
         fi
-    elif [ "$php" = "1" ]; then
-        #Default server php.ini
+    elif [ "$php" = "1" ]; then                                 #Default server php.ini
         echo "Creating the custom PHP php.ini file using the server default."
         cp /usr/local/lib/php.ini "$ini"
     fi
@@ -181,7 +179,9 @@ function sharedwork() {
     if [ -e /home/"$user"/.htaccess ]; then
         if grep -q "x-httpd-php" /home/"$user"/.htaccess; then
             echo -ne "\033[31m"                                 #Red color
-            echo -n "There is an .htaccess in /home/$user with PHP version directives, would you like to remove it? (y/n) "
+            echo "There is an .htaccess in /home/$user with PHP version directives."
+            grep "x-httpd-php" /home/"$user"/.htaccess
+            echo -n " would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
                 sed -i '/x-httpd-php/d' /home/"$user"/.htaccess
@@ -191,7 +191,9 @@ function sharedwork() {
     if [ -e /home/"$user"/public_html/.htaccess ]; then
         if grep -q "x-httpd-php" /home/"$user"/public_html/.htaccess; then
             echo -ne "\033[31m"                                 #Red color
-            echo -n "There is an .htaccess in /home/$user/public_html with PHP version directives, would you like to remove it? (y/n) "
+            echo "There is an .htaccess in /home/$user/public_html with PHP version directives."
+            grep "x-httpd-php" /home/"$user"/public_html/.htaccess
+            echo -n "would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
                 sed -i '/x-httpd-php/d' /home/"$user"/public_html/.htaccess
@@ -204,37 +206,13 @@ function sharedwork() {
     echo -ne "\033[0;39m"                                       #Reset color
 }
 
-function dediaccess() {
-
-    if [ ! -e "$htaccess" ]; then
-        echo "Creating the .htaccess file."
-        touch "$htaccess"
-    fi
-
-    chmod 644 "$htaccess"
-    chown $user:$user "$htaccess"
-
-    #Adding security lines to the new htaccess line
-    {
-        echo "# Added by A2 Hosting Support per support request on $(date +%F)"
-        echo "# Prevent Apache from serving .ht* files:"
-        echo "<FilesMatch \"^\\.ht\">"
-        echo "   Order allow,deny"
-        echo "   Deny from all"
-        echo "</FilesMatch>"
-    } >> "$htaccess"
-
-    #WORK IN PROGRESS HERE - TODO: ADD ALL FLAGS
-}
-
 prompts
 
 if [ $server = "shared" ]; then
     sharedini
     sharedwork
 elif [ $server = "dedicated" ]; then
-    #dediaccess
-    #dediwork
+    echo "This is not a Shared server. You will need to manually edit the WHM php configuration."
 fi
 
 exit 0
