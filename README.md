@@ -1,4 +1,4 @@
-Custom cPanel and Shared Hosting Scripts
+Josh's Shell Scripts to Make Life Easier (TM)
 ==============
 
-This repository is exclusively for custom php.ini scripts that have been created by myself while testing cPanel functionality
+This repository is exclusively for shell scripts that I have found make my life easier while working with my servers.
