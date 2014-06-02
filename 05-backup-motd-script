@@ -1,0 +1,22 @@
+#!/bin/bash
+# Author - Josh Grancell
+# Purpose - Hooks into the /var/log/backup-failures.log to
+# display an MOTD error when a backup has failed
+
+if [ -e /var/log/backup-failures.log ]; then
+        if grep "failed" /var/log/backup-failures.log; then
+                echo ""
+                echo -ne "\033[31m * "
+                cat /var/log/backup-failures.log
+        else
+                echo ""
+                echo -ne "\033[32m * "
+                echo "No recent backup failures. "
+        fi
+else
+        echo ""
+        echo -ne "\033[33m * "
+        echo "Backup log file is missing."
+fi
+
+echo -ne "\033[0;39m"
