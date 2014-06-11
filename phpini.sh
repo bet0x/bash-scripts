@@ -1,6 +1,6 @@
 #!/bin/bash
 # PHP Swiss Army Knife
-# Version 1.1.02
+# Version 1.1.03
 # Author: Josh Grancell
 #
 # Requirements: Server is an A2 Hosting Managed Shared Server
@@ -185,14 +185,14 @@ function sharedwork() {
     #Final check to see if there is an .htaccess file that would affect PHP
     for htaccesses in find /home/"$user"/ -name ".htaccess"     #New for loop that will check all directories, recusively
     do
-        if grep -q "x-httpd-php" $htaccesses; then
+        if grep -q "x-httpd-php" "$htaccesses"; then
             echo -ne "\033[31m"                                 #Red color
             echo "There is an .htaccess in $htaccesses with PHP version directives."
-            grep "x-httpd-php" $htaccesses
+            grep "x-httpd-php" "$htaccesses"
             echo -n " would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
-                sed -i '/x-httpd-php/d' $htaccesses
+                sed -i '/x-httpd-php/d' "$htaccesses"
             fi
         fi
     done
