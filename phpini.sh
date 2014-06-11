@@ -1,6 +1,6 @@
 #!/bin/bash
 # PHP Swiss Army Knife
-# Version 1.1.01
+# Version 1.1.02
 # Author: Josh Grancell
 #
 # Requirements: Server is an A2 Hosting Managed Shared Server
