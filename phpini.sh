@@ -176,30 +176,26 @@ function sharedwork() {
     fi
 
     #Final check to see if there is an .htaccess that would affect PHP
-    if [ -e /home/"$user"/.htaccess ]; then
-        if grep -q "x-httpd-php" /home/"$user"/.htaccess; then
+    for files in find /home/"$user"/ -name "php.ini"
+    do
+        echo "Notice: php.ini file found at $files"
+        #This is the future home of the diff between new php.ini and the found php.ini
+    done
+
+    #Final check to see if there is an .htaccess file that would affect PHP
+    for htaccesses in find /home/"$user"/ -name ".htaccess"     #New for loop that will check all directories, recusively
+    do
+        if grep -q "x-httpd-php" $htaccesses; then
             echo -ne "\033[31m"                                 #Red color
-            echo "There is an .htaccess in /home/$user with PHP version directives."
-            grep "x-httpd-php" /home/"$user"/.htaccess
+            echo "There is an .htaccess in $htaccesses with PHP version directives."
+            grep "x-httpd-php" $htaccesses
             echo -n " would you like to remove it? (y/n) "
             read delme
             if [ "$delme" = "y" ]; then
-                sed -i '/x-httpd-php/d' /home/"$user"/.htaccess
+                sed -i '/x-httpd-php/d' $htaccesses
             fi
         fi
-    fi
-    if [ -e /home/"$user"/public_html/.htaccess ]; then
-        if grep -q "x-httpd-php" /home/"$user"/public_html/.htaccess; then
-            echo -ne "\033[31m"                                 #Red color
-            echo "There is an .htaccess in /home/$user/public_html with PHP version directives."
-            grep "x-httpd-php" /home/"$user"/public_html/.htaccess
-            echo -n "would you like to remove it? (y/n) "
-            read delme
-            if [ "$delme" = "y" ]; then
-                sed -i '/x-httpd-php/d' /home/"$user"/public_html/.htaccess
-            fi
-        fi
-    fi
+    done
 
     echo -ne "\033[32m"                                         #Green color
     echo "Script complete. Please verify the new php.ini, or run the script again if you need another flag updated."
