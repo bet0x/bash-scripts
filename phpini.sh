@@ -65,9 +65,7 @@ function prompts() {
             exit 1                                              #Clean exit on failed input
         fi
 
-        echo "Beginning OS check now."
-
-        if grep -s "CloudLinux" /etc/redhat-release; then
+        if grep -qs "CloudLinux" /etc/redhat-release; then
             server="shared"
         else
             server="dedicated"
@@ -95,8 +93,7 @@ function prompts() {
                     exit 1                                              #Clean exit on failed input
                 fi
             fi
-        fi
-        echo "Ending OS check now." 
+        fi 
     fi      
 }
 
@@ -222,30 +219,23 @@ function flagwork() {
 
 function shareddebug() {
     #Final check to see if there is an .htaccess that would affect PHP
-    for files in find /home/"$user"/ -name "php.ini"
-    do
-        echo "Notice: php.ini file found at $files"
-        #This is the future home of the diff between new php.ini and the found php.ini
+    find /home/"$user"/ -name "php.ini" | while read phpname; do
+        echo "Notice: php.ini file found at $phpname"
     done
 
     #Final check to see if there is an .htaccess file that would affect PHP
-    for htaccesses in find /home/"$user"/ -name ".htaccess"     #New for loop that will check all directories, recusively
-    do
-        if grep -q "x-httpd-php" "$htaccesses"; then
+    find /home/"$user"/ -name ".htaccess" | while read htname; do
+        if grep -q "x-httpd-php" "$htname"; then
             echo -ne "\033[31m"                                 #Red color
-            echo "There is an .htaccess in $htaccesses with PHP version directives."
-            grep "x-httpd-php" "$htaccesses"
-            echo -n " would you like to remove it? (y/n) "
-            read delme
+            echo "There is an .htaccess in $htname with PHP version directives."
+            grep "x-httpd-php" "$htname"
+            #read -p "Would you like to remove it? (y/n) " delme
+            echo -ne "\033[0;39m"                               #Reset color
             if [ "$delme" == "y" ]; then
-                sed -i '/x-httpd-php/d' "$htaccesses"
+                sed -i '/x-httpd-php/d' "$htname"
             fi
         fi
     done
-
-    echo -ne "\033[32m"                                         #Green color
-    echo "Debugging complete."
-    echo -ne "\033[0;39m"                                       #Reset color
 }
 
 prompts
