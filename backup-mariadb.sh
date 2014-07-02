@@ -1,6 +1,6 @@
 #!/bin/bash
 # MariaDB TarGZ Backup Cronjob
-# Version 1.0
+# Version 1.1
 # Author: Josh Grancell
 # License: GNU GPL v3
 #
@@ -11,15 +11,15 @@
 
 #User configurable Settings
 root="/backup"
-s3_container="grancell-vps-backup"
+s3_container=""
 
-dbname1="wordpress_grancell_41026062"
-dbuser1="wordpress_granus"
-dbpass1="9bKRwgaLwdJ2pnwLQgkaHDmJ"
+dbname1=""
+dbuser1=""
+dbpass1=""
 
-dbname2="mediawiki"
-dbuser2="mediawiki"
-dbpass2="2n3ddAEaQUJaL8aC"
+dbname2=""
+dbuser2=""
+dbpass2=""
 
 
 #Automatically setting folder names
@@ -31,26 +31,20 @@ mkdir -p "$root"/temp
 
 #The function that runs the dumps
 function mariadump() {
-	mysqldump -h localhost -u "$1" -p"$2" "$3" | gzip > "$temp_folder""$backup_filename".sql.gz
-}
-
-#The function that runs the tarballing.
-function runbackup() {
-	archive_file="mariadb-backup-$(date +%F).tar.gz"
-	/bin/tar -czvf "$1"/"$2" "$3"
+	mysqldump -h localhost -u "$1" -p"$2" "$3" | gzip > "$4""$5".sql.gz
 }
 
 #Database 1
-backup_filename1=$db_name1-$(date +%F)
-mariadump "$dbname1" "$dbuser1" "$dbpass1" "$temp_folder" "$backup_filename1"
+backup_filename1=$dbname1-$(date +%F)
+mariadump "$dbuser1" "$dbpass1" "$dbname1" "$temp_folder" "$backup_filename1"
 
 #Database 2
-backup_filename=$db_name2-$(date +%F)
-mariadump "$dbname2" "$dbuser2" "$dbpass2" "$temp_folder" "$backup_filename2"
+backup_filename2=$dbname2-$(date +%F)
+mariadump "$dbuser2" "$dbpass2" "$dbname2" "$temp_folder" "$backup_filename2"
 
 #Running the tarballing
 archive_file="mariadb-backup-$(date +%F).tar.gz"
-runbackup "$destination_folder" "$archive_file" "$temp_folder"
+/bin/tar -czvf "$destination_folder"/"$archive_file" "$temp_folder"
 
 if [ -e "$destination_folder"/"$archive_file" ]; then
         echo "Backup of MariaDB files complete for $(date +%F)" >> /var/log/backup.log
