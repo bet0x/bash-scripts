@@ -1,11 +1,11 @@
 #!/bin/bash
-# Nginx backup Script v1.0
+# Nginx backup Script v1.1
 # Author - Josh Grancell
 # License - GNU GPL v3
 
 #Defining the folders
 webserver_folder="/web"
-root_backup_director="/backup"
+root_backup_directory="/backup"
 
 month_folder=$(date +%Y-%m)
 date_folder=$(date +%F)
